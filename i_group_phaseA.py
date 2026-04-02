@@ -26,6 +26,7 @@ class SafetyReport:
     invalid_grant_violations: int = 0
     wrong_direction_violations: int = 0
     u_turn_violations: int = 0
+    right_turn_violations: int = 0
 
 
 @dataclass
