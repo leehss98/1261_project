@@ -1,8 +1,8 @@
 # ECEN 723 Spring 2026: Project Phase A Report
 
-**Team ID:** _(fill in)_
+**Team ID:** _17_
 **Group:** i-group & v-group
-**Members:** _(fill in)_
+**Members:** _Hyunsoo Lee, Joonhyun Choi, Vishnu Rajagopal, Stephen Muttathil_
 **Date:** April 3, 2026
 
 ---
@@ -283,71 +283,173 @@ This section documents the rationale behind key implementation decisions through
 
 ## 7. Test Results
 
-### 7.1 i-group Test
+Three test scenarios are presented: a standalone i-group test, a standalone v-group test, and an end-to-end integrated run of both groups together. All outputs shown are actual program output.
 
-**Setup:** Three vehicles placed across the grid to exercise semaphore arbitration:
+---
+
+### 7.1 i-group Standalone Test
+
+**Setup:** Three vehicles across two intersections to exercise semaphore arbitration and the mid-segment exclusion rule.
+
 - `car_1`: segment `A_to_I00`, slot 29, eastbound, requesting entry to `I00_to_I01`
 - `car_2`: segment `I10_to_I11`, slot 29, eastbound, requesting entry to `I11_to_I12`
 - `car_3`: segment `I01_to_I11`, slot 12, mid-segment, no semaphore wait
 
-**Output (Step 1):**
-```python
-{
-  'time_step': 1,
-  'lights': {
-    'I00': 'east',    # guard condition satisfied for eastbound
-    'I11': 'east',    # guard condition satisfied for eastbound
-    'I01': None, 'I02': None, 'I10': None,
-    'I12': None, 'I20': None, 'I21': None, 'I22': None
-  },
-  'crossing_grants': [
-    {'intersection_id': 'I00', 'car_id': 'car_1', 'granted': True},
-    {'intersection_id': 'I11', 'car_id': 'car_2', 'granted': True}
-  ],
-  'congestion_map': {'I00': 1, 'I11': 1, ...all others 0},
-  'safety_report': {
-    'collisions': 0, 'red_light_violations': 0,
-    'simultaneous_green_violations': 0, 'invalid_grant_violations': 0,
-    'wrong_direction_violations': 0, 'u_turn_violations': 0,
-    'right_turn_violations': 0
-  }
-}
+**Actual output (Step 1):**
+
+```
+{'time_step': 1,
+ 'lights': {'I00': 'east', 'I01': None, 'I02': None, 'I10': None,
+            'I11': 'east', 'I12': None, 'I20': None, 'I21': None, 'I22': None},
+ 'crossing_grants': [
+     {'intersection_id': 'I00', 'car_id': 'car_1', 'granted': True},
+     {'intersection_id': 'I11', 'car_id': 'car_2', 'granted': True}
+ ],
+ 'congestion_map': {'I00': 1, 'I01': 0, 'I02': 0, 'I10': 0,
+                    'I11': 1, 'I12': 0, 'I20': 0, 'I21': 0, 'I22': 0},
+ 'safety_report': {
+     'collisions': 0, 'red_light_violations': 0,
+     'simultaneous_green_violations': 0, 'invalid_grant_violations': 0,
+     'wrong_direction_violations': 0, 'u_turn_violations': 0,
+     'right_turn_violations': 0
+ }}
 ```
 
 **Observations:**
-- Guard condition set to `east` at intersections with eastbound vehicles blocked at slot 29; all others remain unset (`None`)
-- Exactly one semaphore signal issued per intersection; mutual exclusion is maintained
-- `car_3` at slot 12 correctly excluded from arbitration; the semaphore wait precondition (slot 29, `request_crossing = True`) is not satisfied
+- Guard condition is set to `east` at exactly those intersections where an eastbound vehicle is blocked at slot 29; all other lights remain `None`
+- Exactly one semaphore signal is issued per active intersection; mutual exclusion holds
+- `car_3` at slot 12 is correctly excluded from arbitration; the semaphore wait precondition (slot 29, `request_crossing = True`) is not satisfied
 - All invariant violation counters are zero
 
 ---
 
-### 7.2 v-group Test
+### 7.2 i-group: Starvation-Freedom Test
 
-**Setup:** Two vehicles (`car_1`, `car_2`) both starting at `A_to_I00`, slot 0, to exercise the blocking predicate and two-phase protocol.
+**Setup:** Two vehicles held permanently at the same intersection from competing directions to verify that the starvation counter prevents one direction from monopolizing the semaphore.
 
-**Step 1 (no semaphore signals received):**
-```python
-'vehicles': {
-    'car_1': {'current_slot': 1, 'stopped': False, ...},
-    'car_2': {'current_slot': 0, 'stopped': True, ...}
-}
-'stats': {'collisions': 0, 'red_light_violations': 0, ...all zeros}
+- `car_east`: segment `I10_to_I11`, slot 29, eastbound, requesting `I11_to_I12`
+- `car_north`: segment `I21_to_I11`, slot 29, northbound, requesting `I11_to_I01`
+
+**Actual output (Steps 1-4):**
+
 ```
-
-**Step 2 (semaphore signal received: I00=east, car_1 granted):**
-```python
-'vehicles': {
-    'car_1': {'current_slot': 2, 'stopped': False, ...},
-    'car_2': {'current_slot': 0, 'stopped': True, ...}
-}
-'stats': {'collisions': 0, 'red_light_violations': 0, ...all zeros}
+Step 1: light=north  grants=[{'intersection_id': 'I11', 'car_id': 'car_north', 'granted': True}]
+        starvation_east=1  starvation_north=0
+Step 2: light=east   grants=[{'intersection_id': 'I11', 'car_id': 'car_east',  'granted': True}]
+        starvation_east=0  starvation_north=1
+Step 3: light=north  grants=[{'intersection_id': 'I11', 'car_id': 'car_north', 'granted': True}]
+        starvation_east=1  starvation_north=0
+Step 4: light=east   grants=[{'intersection_id': 'I11', 'car_id': 'car_east',  'granted': True}]
+        starvation_east=0  starvation_north=1
 ```
 
 **Observations:**
-- `car_1` advances through state transitions: slot 0 → 1 → 2 across two steps
-- `car_2` remains blocked at slot 0; the blocking predicate is satisfied since `car_1` is within 15 slots ahead in the same segment
-- No invariant violations observed across either step; mutual exclusion is maintained throughout
+- The light alternates between the two directions because equal queue lengths make the starvation counter the tiebreaker
+- Each denied direction increments its counter by 1; the winning direction resets to 0
+- Neither direction is ever denied for two consecutive steps; starvation-freedom holds
+
+---
+
+### 7.3 i-group: Illegal Transition Rejection Test
+
+**Setup:** Three vehicles at separate intersections: one valid straight crossing, one U-turn attempt, and one right-turn attempt.
+
+- `car_ok`: `A_to_I00`, slot 29, eastbound, requesting `I00_to_I01` (valid straight crossing)
+- `car_uturn`: `I00_to_I01`, slot 29, eastbound arriving at I01, requesting `I01_to_I00` (U-turn back west)
+- `car_right`: `I21_to_I11`, slot 29, northbound arriving at I11, requesting `I11_to_I12` (right turn: north to east)
+
+**Actual output (Step 1):**
+
+```
+lights:  {'I00': 'east', 'I01': 'east', 'I11': 'north'}
+grants:  [{'intersection_id': 'I00', 'car_id': 'car_ok', 'granted': True}]
+safety:  {
+    'collisions': 0, 'red_light_violations': 0,
+    'simultaneous_green_violations': 0, 'invalid_grant_violations': 0,
+    'wrong_direction_violations': 0,
+    'u_turn_violations': 1, 'right_turn_violations': 1
+}
+```
+
+**Observations:**
+- `car_ok` receives the only grant; its crossing passes all three transition predicates
+- `car_uturn` is rejected by `validate_request()` and logged as a U-turn violation; no grant is issued at I01
+- `car_right` is rejected and logged as a right-turn violation; no grant is issued at I11
+- Rejection occurs before `select_one_grant()`, so neither illegal vehicle ever competes for the semaphore
+
+---
+
+### 7.4 v-group Standalone Test
+
+**Setup:** Two vehicles starting at `A_to_I00`, slot 0, to exercise the blocking predicate and the two-phase protocol in isolation (no i-group input).
+
+**Actual output:**
+
+```
+Step 1 (no i-group signals):
+  car_1: seg=A_to_I00  slot=1  stopped=False  req=False
+  car_2: seg=A_to_I00  slot=0  stopped=True   req=False
+  stats: {completed_tours:0, red_light_violations:0, collisions:0,
+          illegal_direction_violations:0, u_turn_violations:0, right_turn_violations:0}
+
+Step 2 (i-group signal: I00=east, car_1 granted):
+  car_1: seg=A_to_I00  slot=2  stopped=False  req=False
+  car_2: seg=A_to_I00  slot=0  stopped=True   req=False
+  stats: all zeros
+```
+
+**Observations:**
+- `car_1` advances: slot 0 to 1 to 2 across two steps
+- `car_2` blocks at slot 0 because `car_1` is within 15 slots ahead in the same segment; the blocking predicate fires
+- The grant for `car_1` at I00 in Step 2 does not produce a crossing because `car_1` has not yet reached slot 29; the signal is correctly ignored
+
+---
+
+### 7.5 End-to-End Integration Test
+
+**Setup:** Both simulators running together in a closed loop for 50 steps. The v-group snapshot is forwarded to the i-group each step and the i-group lights and grants are fed back to the v-group. Two vehicles start at `A_to_I00`, slot 0.
+
+**Selected step trace (actual output):**
+
+```
+Step 1:
+  car_1: seg=A_to_I00   slot=1   stopped=False  req=False
+  car_2: seg=A_to_I00   slot=0   stopped=True   req=False
+  lights: {}    grants: []
+
+Step 29:
+  car_1: seg=A_to_I00   slot=29  stopped=False  req=False
+  car_2: seg=A_to_I00   slot=14  stopped=False  req=False
+  lights: {}    grants: []
+  (car_2 is now free; car_1 is exactly 15 slots ahead, at the visibility boundary)
+
+Step 30:  [car_1 issues semaphore wait; i-group responds with grant]
+  car_1: seg=A_to_I00   slot=29  stopped=True   req=True   next=I00_to_I01
+  car_2: seg=A_to_I00   slot=14  stopped=True   req=False
+  lights: {'I00': 'east'}
+  grants: [{'intersection_id': 'I00', 'car_id': 'car_1', 'granted': True}]
+
+Step 31:  [car_1 executes crossing; state transition to new segment]
+  car_1: seg=I00_to_I01  slot=0   stopped=False  req=False
+  car_2: seg=A_to_I00    slot=14  stopped=True   req=False
+  lights: {'I00': 'east'}
+  grants: [{'intersection_id': 'I00', 'car_id': 'car_1', 'granted': True}]
+
+Step 48:  [car_2 has also crossed; both vehicles on I00_to_I01]
+  car_1: seg=I00_to_I01  slot=17  stopped=False  req=False
+  car_2: seg=I00_to_I01  slot=0   stopped=False  req=False
+  lights: {'I00': 'east'}
+  grants: [{'intersection_id': 'I00', 'car_id': 'car_2', 'granted': True}]
+
+All violation counters: zero across both groups for all 50 steps
+```
+
+**Observations:**
+- `car_1` reaches slot 29 after 29 steps (one slot per step, unblocked once `car_2` falls 15 slots behind)
+- At step 30, the crossing request fires and the i-group immediately sets the guard condition and issues a grant in the same step
+- At step 31, `car_1` transitions atomically to slot 0 of `I00_to_I01`; one step per crossing, exactly as required
+- `car_2` follows the same path 17 steps later; the i-group issues a separate independent grant
+- Both groups independently count zero violations across all 50 steps; their safety audit results agree
 
 ---
 
