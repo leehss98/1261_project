@@ -104,13 +104,13 @@ Counts vehicles with `stopped = True` on segments feeding each intersection.
 
 | Property | Mechanism |
 |---|---|
-| ✅ No collisions | `detect_collisions()` — scans all (segment, slot) pairs for duplicates |
-| ✅ No red-light violations | `check_safety()` — every grant must align with the green direction |
-| ✅ At most 1 green per intersection | Checked across all controllers in `check_safety()` |
-| ✅ At most 1 crossing per step | `select_one_grant()` — returns at most one grant per intersection |
-| ✅ No U-turns | `validate_request()` — calls `is_u_turn_transition()` |
-| ✅ No right turns | `validate_request()` — calls `is_right_turn_transition()` |
-| ✅ No wrong-direction transitions | `validate_request()` — calls `is_valid_crossing_transition()` |
+| No collisions | `detect_collisions()` — scans all (segment, slot) pairs for duplicates |
+| No red-light violations | `check_safety()` — every grant must align with the green direction |
+| At most 1 green per intersection | Checked across all controllers in `check_safety()` |
+| At most 1 crossing per step | `select_one_grant()` — returns at most one grant per intersection |
+| No U-turns | `validate_request()` — calls `is_u_turn_transition()` |
+| No right turns | `validate_request()` — calls `is_right_turn_transition()` |
+| No wrong-direction transitions | `validate_request()` — calls `is_valid_crossing_transition()` |
 
 ---
 
@@ -180,11 +180,11 @@ The **lowest-cost valid candidate** is selected.
 
 | Property | Mechanism |
 |---|---|
-| ✅ No collisions | `check_collision()` — scans all (segment, slot) pairs for duplicates |
-| ✅ No red-light violations | `apply_intersection_result()` — checks light direction vs grant |
-| ✅ No U-turns | `apply_intersection_result()` — calls `is_u_turn_transition()` |
-| ✅ No right turns | `apply_intersection_result()` — calls `is_right_turn_transition()` |
-| ✅ No wrong-direction transitions | `apply_intersection_result()` — calls `is_valid_crossing_transition()` |
+| No collisions | `check_collision()` — scans all (segment, slot) pairs for duplicates |
+| No red-light violations | `apply_intersection_result()` — checks light direction vs grant |
+| No U-turns | `apply_intersection_result()` — calls `is_u_turn_transition()` |
+| No right turns | `apply_intersection_result()` — calls `is_right_turn_transition()` |
+| No wrong-direction transitions | `apply_intersection_result()` — calls `is_valid_crossing_transition()` |
 
 ---
 
@@ -237,10 +237,10 @@ The two modules exchange the following data each time step:
 ```
 
 **What this confirms:**
-- ✅ Lights set to `east` exactly where eastbound vehicles are waiting
-- ✅ Exactly one grant issued per intersection
-- ✅ `car_3` at slot 12 correctly excluded — not at slot 29, no crossing request
-- ✅ All safety counters zero — no violations
+- Lights set to `east` exactly where eastbound vehicles are waiting
+- Exactly one grant issued per intersection
+- `car_3` at slot 12 correctly excluded — not at slot 29, no crossing request
+- All safety counters zero — no violations
 
 ---
 
@@ -267,9 +267,9 @@ The two modules exchange the following data each time step:
 ```
 
 **What this confirms:**
-- ✅ `car_1` advances slot 0 → 1 → 2 correctly across two steps
-- ✅ `car_2` stays stopped at slot 0 — correctly blocked by `car_1` ahead within 15 slots
-- ✅ No violations across either step
+- `car_1` advances slot 0 → 1 → 2 correctly across two steps
+- `car_2` stays stopped at slot 0 — correctly blocked by `car_1` ahead within 15 slots
+- No violations across either step
 
 ---
 
