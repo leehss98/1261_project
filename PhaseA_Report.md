@@ -72,7 +72,7 @@ The direction with the highest score is granted the green light. Non-winning dir
 `build_crossing_requests()` validates each vehicle's request against all three transition predicates. Only requests that satisfy every predicate proceed; violations are logged immediately to the safety report.
 
 **Step 4: Acquire the semaphore**
-`select_one_grant()` filters valid requests to those satisfying the current guard condition (matching the green direction) and issues exactly **one grant, a binary semaphore signal, per intersection. Ties are broken deterministically by `car_id` (lexicographic order), ensuring **deterministic arbitration**.
+`select_one_grant()` filters valid requests to those satisfying the current guard condition (matching the green direction) and issues exactly **one grant** (a binary semaphore signal) per intersection. Ties are broken deterministically by `car_id` (lexicographic order), ensuring **deterministic arbitration**.
 
 **Step 5: Compute congestion map**
 Counts vehicles with `stopped = True` on segments feeding each intersection; a measure of system load used by the v-group's decision procedure.
