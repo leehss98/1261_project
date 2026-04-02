@@ -409,6 +409,7 @@ class VehicleSimulator:
                 "collisions": self.collisions,
                 "illegal_direction_violations": self.illegal_direction_violations,
                 "u_turn_violations": self.u_turn_violations,
+                "right_turn_violations": self.right_turn_violations,
             },
         }
 
