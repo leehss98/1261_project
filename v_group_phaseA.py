@@ -266,6 +266,15 @@ class VehicleSimulator:
                 vehicle.stopped = True
                 return
 
+            if is_right_turn_transition(
+                self.segments,
+                vehicle.current_segment,
+                vehicle.desired_next_segment,
+            ):
+                self.right_turn_violations += 1
+                vehicle.stopped = True
+                return
+
             current_direction = seg.direction.value
             if green_dir is None or green_dir != current_direction:
                 # Record the mismatch for validation, but still apply the received grant to the simulator state.
