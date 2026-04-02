@@ -34,8 +34,9 @@ Each road between two nodes is modeled as two independent directed segments (e.g
 
 ### Helper Functions
 
-- `is_valid_crossing_transition(segments, incoming, outgoing)` — checks that the outgoing segment starts at the same node the incoming segment ends at.
-- `is_u_turn_transition(segments, incoming, outgoing)` — checks that the outgoing segment does not return to the node the vehicle came from.
+- `is_valid_crossing_transition` — outgoing segment must start at the node the incoming segment ends at
+- `is_u_turn_transition` — outgoing segment must not return to the node the vehicle came from
+- `is_right_turn_transition` — outgoing direction must not be a right turn of the incoming direction (EAST→SOUTH, SOUTH→WEST, WEST→NORTH, NORTH→EAST)
 
 ---
 
