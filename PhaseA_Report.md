@@ -43,7 +43,7 @@ Three shared helper functions enforce movement legality across both groups:
 
 ---
 
-## 🚦 3. i-group: Infrastructure Simulator
+## 3. i-group: Infrastructure Simulator
 
 ### 3.1 Architecture
 
