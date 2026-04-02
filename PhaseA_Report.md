@@ -7,7 +7,7 @@
 
 ---
 
-## 📋 1. Code Structure
+## 1. Code Structure
 
 The implementation is organized into **three files**, cleanly separating shared infrastructure from each group's logic:
 
