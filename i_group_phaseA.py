@@ -166,6 +166,14 @@ class InfrastructureSimulator:
             self.safety_report.u_turn_violations += 1
             return False, True
 
+        if is_right_turn_transition(
+            self.segments,
+            vehicle.current_segment,
+            vehicle.desired_next_segment,
+        ):
+            self.safety_report.right_turn_violations += 1
+            return False, False
+
         return True, False
 
     def build_crossing_requests(
