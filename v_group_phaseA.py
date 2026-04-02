@@ -62,6 +62,8 @@ class RoutePlanner:
                 continue
             if is_u_turn_transition(self.segments, current_segment, seg_id):
                 continue
+            if is_right_turn_transition(self.segments, current_segment, seg_id):
+                continue
 
             seg = self.segments[seg_id]
             score = self.estimate_cost(seg.to_node, target_node, congestion_map)
