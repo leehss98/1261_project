@@ -2,7 +2,7 @@
 
 **Team ID:** _17_
 **Group:** i-group
-**Members:** _Hyunsoo Lee, Joonhyun Choi, Vishnu Rajagopal, Stephen Muttathil_
+**Members:** _Hyunsoo Lee, Joonhyun Choi_
 **Date:** April 3, 2026
 
 ---
