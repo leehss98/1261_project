@@ -330,8 +330,6 @@ class InfrastructureSimulator:
                 "simultaneous_green_violations": self.safety_report.simultaneous_green_violations,
                 "invalid_grant_violations": self.safety_report.invalid_grant_violations,
                 "wrong_direction_violations": self.safety_report.wrong_direction_violations,
-                "u_turn_violations": self.safety_report.u_turn_violations,
-                "right_turn_violations": self.safety_report.right_turn_violations,
             },
         }
 
