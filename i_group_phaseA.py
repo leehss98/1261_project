@@ -97,6 +97,7 @@ class InfrastructureSimulator:
 
         self.time_step = 0
         self.safety_report = SafetyReport()
+        self.last_congestion_map: Dict[str, int] = {}
 
     def get_incoming_waiting_vehicles(
         self,
