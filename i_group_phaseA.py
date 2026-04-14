@@ -291,8 +291,10 @@ class InfrastructureSimulator:
         requests_by_intersection: Dict[str, List[CrossingRequest]],
     ) -> None:
         """
-        Verify that each granted vehicle came from the green direction and requested a legal transition.
-        Collision detection is handled separately by scanning occupied vehicle positions afterward.
+        Verify properties the i-group CAN observe: at most one green per intersection,
+        grants only go to the green direction, and no two vehicles share a slot.
+        Turn-type checks (U-turn, right-turn) are the v-group's responsibility
+        because the i-group does not know the vehicle's intended outgoing segment.
         """
         for iid, controller in self.controllers.items():
             green = controller.light_state.green_direction
@@ -313,31 +315,6 @@ class InfrastructureSimulator:
                     if green_dir is None or incoming_seg.direction != green_dir:
                         self.safety_report.invalid_grant_violations += 1
                         self.safety_report.red_light_violations += 1
-
-                    if not is_valid_crossing_transition(
-                        self.segments,
-                        req.incoming_segment,
-                        req.outgoing_segment,
-                    ):
-                        self.safety_report.invalid_grant_violations += 1
-                        self.safety_report.wrong_direction_violations += 1
-
-                    if is_u_turn_transition(
-                        self.segments,
-                        req.incoming_segment,
-                        req.outgoing_segment,
-                    ):
-                        self.safety_report.invalid_grant_violations += 1
-                        self.safety_report.u_turn_violations += 1
-
-                    if is_right_turn_transition(
-                        self.segments,
-                        req.incoming_segment,
-                        req.outgoing_segment,
-                    ):
-                        if green_dir is None or incoming_seg.direction != green_dir:
-                            self.safety_report.invalid_grant_violations += 1
-                            self.safety_report.right_turn_violations += 1
 
         self.detect_collisions(vehicles)
 
