@@ -300,6 +300,7 @@ class InfrastructureSimulator:
                 grants.append(grant)
 
         congestion = self.compute_congestion_map(vehicles)
+        self.last_congestion_map = congestion
 
         self.check_safety(vehicles, grants, requests_by_intersection)
 
