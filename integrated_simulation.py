@@ -58,7 +58,9 @@ class IntegratedSimulation:
         }
 
     def _merge_safety_reports(self, i_safety: dict) -> dict:
-        """Combine violation counts from both simulators for cross-validation."""
+        """Combine violation counts from both simulators for cross-validation.
+        Turn-type violations (U-turn, right-turn) are only tracked by v-group
+        because the i-group does not know the vehicle's intended direction."""
         return {
             "collisions_i": i_safety["collisions"],
             "collisions_v": self.v_sim.collisions,
@@ -68,9 +70,7 @@ class IntegratedSimulation:
             "invalid_grant_violations": i_safety["invalid_grant_violations"],
             "wrong_direction_violations_i": i_safety["wrong_direction_violations"],
             "illegal_direction_violations_v": self.v_sim.illegal_direction_violations,
-            "u_turn_violations_i": i_safety["u_turn_violations"],
             "u_turn_violations_v": self.v_sim.u_turn_violations,
-            "right_turn_violations_i": i_safety["right_turn_violations"],
             "right_turn_violations_v": self.v_sim.right_turn_violations,
         }
 
