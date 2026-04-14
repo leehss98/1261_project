@@ -127,8 +127,8 @@ class IntegratedSimulation:
         sr = result["safety_report"]
         print(f"    Collisions:             {sr['collisions_i']} / {sr['collisions_v']}")
         print(f"    Red-light violations:   {sr['red_light_violations_i']} / {sr['red_light_violations_v']}")
-        print(f"    U-turn violations:      {sr['u_turn_violations_i']} / {sr['u_turn_violations_v']}")
-        print(f"    Right-turn violations:  {sr['right_turn_violations_i']} / {sr['right_turn_violations_v']}")
+        print(f"    U-turn violations:      - / {sr['u_turn_violations_v']}")
+        print(f"    Right-turn violations:  - / {sr['right_turn_violations_v']}")
         print(f"    Wrong/illegal dir:      {sr['wrong_direction_violations_i']} / {sr['illegal_direction_violations_v']}")
         print(f"    Simultaneous green:     {sr['simultaneous_green_violations']}")
         print(f"    Invalid grants:         {sr['invalid_grant_violations']}")
