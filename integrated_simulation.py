@@ -87,6 +87,19 @@ class IntegratedSimulation:
         self._print_final_summary(result)
         return result
 
+    def run_graphical(self, num_steps: int = 200) -> None:
+        """Run simulation with tkinter GUI animation."""
+        import tkinter as tk
+        from traffic_gui import TrafficVisualization, GraphicalSimulationRunner
+
+        root = tk.Tk()
+        root.title("ECEN 723 Traffic Simulation")
+        root.resizable(False, False)
+        vis = TrafficVisualization(root)
+        runner = GraphicalSimulationRunner(self, vis, num_steps, root)
+        runner.start()
+        root.mainloop()
+
     def _print_step_summary(self, result: dict) -> None:
         step = result["time_step"]
         print(f"\n--- Step {step} ---")
@@ -133,7 +146,11 @@ if __name__ == "__main__":
     parser.add_argument("--vehicles", type=int, default=5, help="Number of vehicles (default: 5)")
     parser.add_argument("--steps", type=int, default=1000, help="Number of simulation steps (default: 1000)")
     parser.add_argument("--print-interval", type=int, default=10, help="Print every N steps (default: 10)")
+    parser.add_argument("-G", "--graphical", action="store_true", help="Enable graphical animation mode")
     args = parser.parse_args()
 
     sim = IntegratedSimulation(num_vehicles=args.vehicles)
-    sim.run(num_steps=args.steps, print_interval=args.print_interval)
+    if args.graphical:
+        sim.run_graphical(num_steps=args.steps)
+    else:
+        sim.run(num_steps=args.steps, print_interval=args.print_interval)

@@ -94,10 +94,10 @@ NODES: Dict[str, Node] = {
     "I20": Node("I20", NodeType.INTERSECTION),
     "I21": Node("I21", NodeType.INTERSECTION),
     "I22": Node("I22", NodeType.INTERSECTION),
+    # A is an external terminal 1/30 mile west of I00.
+    # B, C, D are co-located with intersections I20, I22, I02 respectively
+    # (zero-length; vehicles mark a visit when they arrive at those intersections).
     "A": Node("A", NodeType.TERMINAL),
-    "B": Node("B", NodeType.TERMINAL),
-    "C": Node("C", NodeType.TERMINAL),
-    "D": Node("D", NodeType.TERMINAL),
 }
 
 
@@ -128,12 +128,7 @@ SEGMENTS: Dict[str, Segment] = {
     "I22_to_I12": Segment("I22_to_I12", "I22", "I12", Direction.NORTH),
     "A_to_I00": Segment("A_to_I00", "A", "I00", Direction.EAST),
     "I00_to_A": Segment("I00_to_A", "I00", "A", Direction.WEST),
-    "B_to_I02": Segment("B_to_I02", "B", "I02", Direction.SOUTH),
-    "I02_to_B": Segment("I02_to_B", "I02", "B", Direction.NORTH),
-    "C_to_I22": Segment("C_to_I22", "C", "I22", Direction.WEST),
-    "I22_to_C": Segment("I22_to_C", "I22", "C", Direction.EAST),
-    "D_to_I20": Segment("D_to_I20", "D", "I20", Direction.NORTH),
-    "I20_to_D": Segment("I20_to_D", "I20", "D", Direction.SOUTH),
+    # B=I20, C=I22, D=I02: no separate terminal segments needed.
 }
 
 

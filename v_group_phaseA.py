@@ -39,6 +39,10 @@ class RoutePlanner:
             remaining.append("D")
 
         if remaining:
+            # Stick with the vehicle's current target if it is still unvisited
+            # so that cars assigned different initial targets take different routes.
+            if vehicle.current_target in remaining:
+                return vehicle.current_target
             return remaining[0]
 
         return "A"
@@ -65,8 +69,6 @@ class RoutePlanner:
             if not is_valid_crossing_transition(self.segments, current_segment, seg_id):
                 continue
             if is_u_turn_transition(self.segments, current_segment, seg_id):
-                continue
-            if is_right_turn_transition(self.segments, current_segment, seg_id):
                 continue
 
             seg = self.segments[seg_id]
@@ -98,9 +100,9 @@ class RoutePlanner:
         elif node.startswith("I") and target in {"A", "B", "C", "D"}:
             terminal_anchor = {
                 "A": "I00",
-                "B": "I02",
+                "B": "I20",
                 "C": "I22",
-                "D": "I20",
+                "D": "I02",
             }[target]
             score += abs(int(node[1]) - int(terminal_anchor[1])) * 2
             score += abs(int(node[2]) - int(terminal_anchor[2])) * 2
@@ -117,6 +119,8 @@ class VehicleSimulator:
         self.segments = build_segments()
         self.route_planner = RoutePlanner(self.segments)
         self.vehicles: Dict[str, VehicleState] = {}
+        self.parked_vehicles: Dict[str, VehicleState] = {}
+        self.pending_vehicles: List[str] = []
         self.time_step = 0
         self.completed_tours = 0
         self.red_light_violations = 0
@@ -125,7 +129,28 @@ class VehicleSimulator:
         self.u_turn_violations = 0
         self.right_turn_violations = 0
 
+    _TARGET_CYCLE = ["B", "C", "D"]
+
+    def _initial_target(self, car_id: str) -> str:
+        """Stagger the first target so different cars head to different destinations."""
+        try:
+            idx = int(car_id.split("_")[1])
+        except (IndexError, ValueError):
+            idx = 1
+        return self._TARGET_CYCLE[(idx - 1) % 3]
+
     def add_vehicle(self, car_id: str) -> None:
+        """Queue the vehicle for deferred spawning so cars enter one at a time."""
+        self.pending_vehicles.append(car_id)
+
+    def _spawn_next_vehicle(self) -> None:
+        """Place the next queued vehicle at slot 0 of A_to_I00 when the entrance is clear."""
+        if not self.pending_vehicles:
+            return
+        for v in self.vehicles.values():
+            if v.current_segment == "A_to_I00" and v.current_slot <= self.VISIBILITY_SLOTS:
+                return
+        car_id = self.pending_vehicles.pop(0)
         self.vehicles[car_id] = VehicleState(
             car_id=car_id,
             current_segment="A_to_I00",
@@ -133,7 +158,7 @@ class VehicleSimulator:
             visited_B=False,
             visited_C=False,
             visited_D=False,
-            current_target="B",
+            current_target=self._initial_target(car_id),
             stopped=False,
             request_crossing=False,
             desired_next_segment=None,
@@ -143,11 +168,12 @@ class VehicleSimulator:
         seg = self.segments[vehicle.current_segment]
         node = seg.to_node if vehicle.current_slot == seg.length_slots - 1 else None
 
-        if node == "B":
+        # B=I20, C=I22, D=I02: mark visit when arriving at the corner intersection.
+        if node in ("B", "I20"):
             vehicle.visited_B = True
-        elif node == "C":
+        elif node in ("C", "I22"):
             vehicle.visited_C = True
-        elif node == "D":
+        elif node in ("D", "I02"):
             vehicle.visited_D = True
 
         vehicle.current_target = self.route_planner.get_next_target(vehicle)
@@ -270,16 +296,17 @@ class VehicleSimulator:
                 vehicle.stopped = True
                 return
 
+            current_direction = seg.direction.value
             if is_right_turn_transition(
                 self.segments,
                 vehicle.current_segment,
                 vehicle.desired_next_segment,
             ):
-                self.right_turn_violations += 1
-                vehicle.stopped = True
-                return
+                if green_dir is None or green_dir != current_direction:
+                    self.right_turn_violations += 1
+                    vehicle.stopped = True
+                    return
 
-            current_direction = seg.direction.value
             if green_dir is None or green_dir != current_direction:
                 # Record the mismatch for validation, but still apply the received grant to the simulator state.
                 self.red_light_violations += 1
@@ -302,8 +329,8 @@ class VehicleSimulator:
             occupied.add(loc)
 
     def build_vehicle_snapshot(self) -> Dict[str, Dict[str, object]]:
-        return {
-            car_id: {
+        def _to_dict(v: VehicleState) -> Dict[str, object]:
+            return {
                 "current_segment": v.current_segment,
                 "current_slot": v.current_slot,
                 "visited_B": v.visited_B,
@@ -314,8 +341,12 @@ class VehicleSimulator:
                 "request_crossing": v.request_crossing,
                 "desired_next_segment": v.desired_next_segment,
             }
-            for car_id, v in self.vehicles.items()
-        }
+        out = {cid: _to_dict(v) for cid, v in self.vehicles.items()}
+        for cid, v in self.parked_vehicles.items():
+            d = _to_dict(v)
+            d["parked"] = True
+            out[cid] = d
+        return out
 
     def build_vehicle_state_snapshot(self) -> Dict[str, VehicleState]:
         """Return a snapshot as VehicleState objects for consumption by the i-group."""
@@ -343,6 +374,9 @@ class VehicleSimulator:
         Build the snapshot that will be sent to the i-group.
         Segment-internal movement happens here, while actual intersection crossing is applied after the i-group response arrives.
         """
+        self._spawn_next_vehicle()
+        _completed_ids: List[str] = []
+
         for vehicle in self.vehicles.values():
             vehicle.current_target = self.route_planner.get_next_target(vehicle)
 
@@ -356,11 +390,22 @@ class VehicleSimulator:
 
             if vehicle.current_slot < seg.length_slots - 1:
                 self.move_inside_segment(vehicle)
-            elif seg.to_node in {"A", "B", "C", "D"}:
+            elif seg.to_node == "A":
                 self.mark_visit_if_needed(vehicle)
-                self.advance_from_terminal(vehicle, congestion_map)
+                if vehicle.visited_B and vehicle.visited_C and vehicle.visited_D:
+                    self.completed_tours += 1
+                    vehicle.stopped = True
+                    vehicle.request_crossing = False
+                    vehicle.desired_next_segment = None
+                    vehicle.current_target = "A"
+                    _completed_ids.append(vehicle.car_id)
+                else:
+                    self.advance_from_terminal(vehicle, congestion_map)
             else:
                 self.build_crossing_request(vehicle, congestion_map)
+
+        for car_id in _completed_ids:
+            self.parked_vehicles[car_id] = self.vehicles.pop(car_id)
 
         self.check_collision()
         return self.build_vehicle_state_snapshot()
@@ -371,27 +416,13 @@ class VehicleSimulator:
         crossing_grants: List[Dict[str, object]],
     ) -> None:
         for vehicle in self.vehicles.values():
-            seg = self.segments[vehicle.current_segment]
-
-            if vehicle.request_crossing and seg.to_node.startswith("I"):
-                self.apply_intersection_result(vehicle, lights, crossing_grants)
-
+            # Mark terminal visits (I20=B, I22=C, I02=D) BEFORE the crossing so
+            # the route planner sees the updated target when choosing the next segment.
             self.mark_visit_if_needed(vehicle)
 
-            if vehicle.visited_B and vehicle.visited_C and vehicle.visited_D:
-                end_seg = self.segments[vehicle.current_segment]
-                if end_seg.to_node == "A" and vehicle.current_slot == end_seg.length_slots - 1:
-                    self.completed_tours += 1
-                    # Restart completed tours from the same initial state.
-                    vehicle.current_segment = "A_to_I00"
-                    vehicle.current_slot = 0
-                    vehicle.visited_B = False
-                    vehicle.visited_C = False
-                    vehicle.visited_D = False
-                    vehicle.current_target = "B"
-                    vehicle.stopped = False
-                    vehicle.request_crossing = False
-                    vehicle.desired_next_segment = None
+            seg = self.segments[vehicle.current_segment]
+            if vehicle.request_crossing and seg.to_node.startswith("I"):
+                self.apply_intersection_result(vehicle, lights, crossing_grants)
 
         self.check_collision()
 

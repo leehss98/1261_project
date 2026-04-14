@@ -175,8 +175,11 @@ class InfrastructureSimulator:
             vehicle.current_segment,
             vehicle.desired_next_segment,
         ):
-            self.safety_report.right_turn_violations += 1
-            return False, False
+            intersection_id = incoming_seg.to_node
+            green_dir = self.controllers[intersection_id].light_state.green_direction
+            if green_dir is None or incoming_seg.direction != green_dir:
+                self.safety_report.right_turn_violations += 1
+                return False, False
 
         return True, False
 
@@ -328,8 +331,9 @@ class InfrastructureSimulator:
                         req.incoming_segment,
                         req.outgoing_segment,
                     ):
-                        self.safety_report.invalid_grant_violations += 1
-                        self.safety_report.right_turn_violations += 1
+                        if green_dir is None or incoming_seg.direction != green_dir:
+                            self.safety_report.invalid_grant_violations += 1
+                            self.safety_report.right_turn_violations += 1
 
         self.detect_collisions(vehicles)
 
