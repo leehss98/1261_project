@@ -130,56 +130,6 @@ class InfrastructureSimulator:
             counts[seg.direction] += 1
         return counts
 
-    def validate_request(
-        self,
-        vehicle: VehicleState,
-    ) -> Tuple[bool, bool]:
-        # Reject any request whose position or segment transition violates the shared road model.
-        if vehicle.current_segment not in self.segments:
-            self.safety_report.wrong_direction_violations += 1
-            return False, False
-        if vehicle.desired_next_segment is None or vehicle.desired_next_segment not in self.segments:
-            self.safety_report.wrong_direction_violations += 1
-            return False, False
-
-        incoming_seg = self.segments[vehicle.current_segment]
-        if vehicle.current_slot != incoming_seg.length_slots - 1:
-            self.safety_report.wrong_direction_violations += 1
-            return False, False
-
-        if incoming_seg.to_node not in self.intersection_ids:
-            self.safety_report.wrong_direction_violations += 1
-            return False, False
-
-        if not is_valid_crossing_transition(
-            self.segments,
-            vehicle.current_segment,
-            vehicle.desired_next_segment,
-        ):
-            self.safety_report.wrong_direction_violations += 1
-            return False, False
-
-        if is_u_turn_transition(
-            self.segments,
-            vehicle.current_segment,
-            vehicle.desired_next_segment,
-        ):
-            self.safety_report.u_turn_violations += 1
-            return False, True
-
-        if is_right_turn_transition(
-            self.segments,
-            vehicle.current_segment,
-            vehicle.desired_next_segment,
-        ):
-            intersection_id = incoming_seg.to_node
-            green_dir = self.controllers[intersection_id].light_state.green_direction
-            if green_dir is None or incoming_seg.direction != green_dir:
-                self.safety_report.right_turn_violations += 1
-                return False, False
-
-        return True, False
-
     def build_crossing_requests(
         self,
         vehicles: Dict[str, VehicleState],
