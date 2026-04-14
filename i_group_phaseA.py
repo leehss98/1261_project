@@ -67,8 +67,9 @@ class IntersectionController:
     def update_light(
         self,
         waiting_by_direction: Dict[Direction, int],
+        congestion: int = 0,
     ) -> None:
-        chosen = self.select_green_direction(waiting_by_direction)
+        chosen = self.select_green_direction(waiting_by_direction, congestion)
         self.light_state.green_direction = chosen
 
         for d in Direction:
