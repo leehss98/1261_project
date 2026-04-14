@@ -287,7 +287,9 @@ class InfrastructureSimulator:
 
         for iid in self.intersection_ids:
             waiting_by_dir = self.count_waiting_by_direction(iid, waiting[iid])
-            self.controllers[iid].update_light(waiting_by_dir)
+            self.controllers[iid].update_light(
+                waiting_by_dir, self.last_congestion_map.get(iid, 0)
+            )
 
         requests_by_intersection = self.build_crossing_requests(vehicles)
 
