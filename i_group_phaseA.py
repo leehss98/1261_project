@@ -43,17 +43,22 @@ class IntersectionController:
     def select_green_direction(
         self,
         waiting_by_direction: Dict[Direction, int],
+        congestion: int = 0,
     ) -> Optional[Direction]:
         """
-        Score each direction with both queue length and a starvation counter.
-        This gives long-waiting directions a simple bias so they do not get ignored indefinitely.
+        Score each direction with queue length, starvation counter, and intersection
+        congestion.  Higher congestion at this intersection biases toward clearing
+        the direction with the most waiting vehicles, reducing overall backup.
         """
         best_dir = None
         best_score = -1
 
         for d in Direction:
-            score = waiting_by_direction.get(d, 0) + self.starvation_counter.get(d, 0)
-            if score > best_score and waiting_by_direction.get(d, 0) > 0:
+            waiting = waiting_by_direction.get(d, 0)
+            if waiting == 0:
+                continue
+            score = waiting + self.starvation_counter.get(d, 0) + congestion
+            if score > best_score:
                 best_score = score
                 best_dir = d
 
