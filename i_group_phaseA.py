@@ -211,7 +211,9 @@ class InfrastructureSimulator:
             if vehicle.current_segment not in self.segments:
                 continue
             seg = self.segments[vehicle.current_segment]
-            if seg.to_node in self.intersection_ids and vehicle.stopped:
+            if (seg.to_node in self.intersection_ids
+                    and vehicle.stopped
+                    and vehicle.current_slot == seg.length_slots - 1):
                 congestion[seg.to_node] += 1
 
         return congestion
