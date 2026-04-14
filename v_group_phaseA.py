@@ -308,8 +308,9 @@ class VehicleSimulator:
                     return
 
             if green_dir is None or green_dir != current_direction:
-                # Record the mismatch for validation, but still apply the received grant to the simulator state.
                 self.red_light_violations += 1
+                vehicle.stopped = True
+                return
 
             vehicle.current_segment = vehicle.desired_next_segment
             vehicle.current_slot = 0
