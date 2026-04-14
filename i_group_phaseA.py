@@ -187,18 +187,22 @@ class InfrastructureSimulator:
         self,
         vehicles: Dict[str, VehicleState],
     ) -> Dict[str, List[CrossingRequest]]:
+        """Build crossing requests using only information the i-group can observe:
+        vehicle location (segment + slot) and whether a crossing was requested.
+        The i-group does NOT know the vehicle's desired outgoing segment."""
         requests: Dict[str, List[CrossingRequest]] = {iid: [] for iid in self.intersection_ids}
 
         for vehicle in vehicles.values():
             if not vehicle.request_crossing:
                 continue
-            is_valid, _ = self.validate_request(vehicle)
-            if not is_valid:
+            if vehicle.current_segment not in self.segments:
                 continue
 
             incoming_seg = self.segments[vehicle.current_segment]
-            intersection_id = incoming_seg.to_node
+            if vehicle.current_slot != incoming_seg.length_slots - 1:
+                continue
 
+            intersection_id = incoming_seg.to_node
             if intersection_id not in self.intersection_ids:
                 continue
 
@@ -207,7 +211,7 @@ class InfrastructureSimulator:
                     car_id=vehicle.car_id,
                     intersection_id=intersection_id,
                     incoming_segment=vehicle.current_segment,
-                    outgoing_segment=vehicle.desired_next_segment,
+                    outgoing_segment="",
                 )
             )
 
