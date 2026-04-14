@@ -2,7 +2,6 @@
 .claude/
 .claude-session.md
 .claude/settings.local.json
-CLAUDE.md
 
 # Python
 __pycache__/
